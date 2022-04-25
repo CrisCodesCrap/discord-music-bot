@@ -133,16 +133,9 @@ async def resume(ctx):
         msg = await ctx.send('Nothing is paused right now.')
         await delete_msg(msg)
 
-@bot.command(aliases=['l','L','LEAVE'])
-async def leave(ctx):
-    voice = get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        await voice.disconnect()
-        msg = await ctx.send('Left the voice channel.')
-        await delete_msg(msg)
-    else:
-        msg = await ctx.send('I am not in a voice channel.')
-        await delete_msg(msg)
+@bot.command(aliases=['l','L','LOOP'])
+async def loop(ctx, query):
+    await ctx.send('Not implemented yet ;\.')
 
 #Helper functions for the commands:
 async def join(ctx,channel):
