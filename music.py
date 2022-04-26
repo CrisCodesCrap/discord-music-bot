@@ -7,7 +7,7 @@ FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_
 async def embed(ctx,song,voice):
     content = f'1. {song[0]["title"]}\n2. {song[1]["title"]}\n3. {song[2]["title"]}\n4. {song[3]["title"]}\n5. {song[4]["title"]}'
     embeded = discord.Embed(title='Choose a song:', color=4770532,description=content)
-    embeded.set_footer(text='Type "cancel" to cancel the selection.')
+    embeded.set_footer(text='Type anything else to cancel the selection.')
     embed_msg = await ctx.send(embed=embeded)
     message = await bot.wait_for('message')
     await message.delete(delay=5)
@@ -36,11 +36,7 @@ async def pick_song(ctx,message,song,voice,embed_msg):
     selected = ''
     num = 0
     cancelled = False
-    if message.author == ctx.author and message.content.lower() == 'cancel':
-        msg = await ctx.send('Cancelled.')
-        await delete_msg(msg)
-        cancelled = True
-    elif message.author == ctx.author and message.content.lower() == '1':
+    if message.author == ctx.author and message.content.lower() == '1':
         num = 0
     elif message.author == ctx.author and message.content.lower() == '2':
         num = 1
@@ -51,7 +47,7 @@ async def pick_song(ctx,message,song,voice,embed_msg):
     elif message.author == ctx.author and message.content.lower() == '5':
         num = 4
     elif message.author == ctx.author:
-        await ctx.send('Invalid choice.')
+        msg = await ctx.send('Cancelled.')
         cancelled = True
     if not cancelled:
         selected = song[num]
