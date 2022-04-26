@@ -6,7 +6,10 @@ from discord.utils import get
 from youtube_dl import *
 
 intents = discord.Intents().all()
-bot = commands.Bot(command_prefix='!',intents=intents)
+activity = discord.Activity(type=discord.ActivityType.watching, name="Kriskata v chervena staq")
+
+bot = commands.Bot(command_prefix='!',intents=intents, activity=activity, status=discord.Status.online)
+
 
 @bot.event
 async def on_ready():

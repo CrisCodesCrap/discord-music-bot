@@ -48,6 +48,7 @@ async def pick_song(ctx,message,song,voice,embed_msg):
         num = 4
     elif message.author == ctx.author:
         msg = await ctx.send('Cancelled.')
+        await delete_msg(msg)
         cancelled = True
     if not cancelled:
         selected = song[num]
