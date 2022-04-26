@@ -1,71 +1,13 @@
-import queue
+#The file which handles all the music related features of the bot.
 from main import *
+
 queues = {}
 
+#Options for the music player:
 FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+
 #Commands:
 
-async def embed(ctx,song,voice):
-    content = f'1. {song[0]["title"]}\n2. {song[1]["title"]}\n3. {song[2]["title"]}\n4. {song[3]["title"]}\n5. {song[4]["title"]}'
-    embeded = discord.Embed(title='Choose a song:', color=4770532,description=content)
-    embeded.set_footer(text='Type anything else to cancel the selection.')
-    embed_msg = await ctx.send(embed=embeded)
-    message = await bot.wait_for('message')
-    await message.delete(delay=5)
-    await pick_song(ctx,message,song,voice,embed_msg)
-async def get_song(ctx,query):
-    with YoutubeDL({'format': 'bestaudio', 'noplaylist':'False'}) as ydl:
-        if query.startswith('https://www.youtube.com/'):
-            info = ydl.extract_info(query, download=False)
-            voice = get(bot.voice_clients, guild=ctx.guild)
-            id = ctx.guild.id
-            if id in queues:
-                queues[id].append(info)
-            else:
-                queues[id] = [info]
-            if len(queues[id]) > 0:
-                msg = await ctx.send(f'Added {info["title"]} to the queue.')
-                await delete_msg(msg)
-            if not voice.is_playing():
-                check_queue(ctx)
-        else:
-            info = ydl.extract_info(f"ytsearch5:{query}", download=False)['entries']
-            return(info)
-
-async def pick_song(ctx,message,song,voice,embed_msg):
-    id = ctx.guild.id
-    selected = ''
-    num = 0
-    cancelled = False
-    if message.author == ctx.author and message.content.lower() == '1':
-        num = 0
-    elif message.author == ctx.author and message.content.lower() == '2':
-        num = 1
-    elif message.author == ctx.author and message.content.lower() == '3':
-        num = 2
-    elif message.author == ctx.author and message.content.lower() == '4':
-        num = 3
-    elif message.author == ctx.author and message.content.lower() == '5':
-        num = 4
-    elif message.author == ctx.author:
-        msg = await ctx.send('Cancelled.')
-        await delete_msg(msg)
-        cancelled = True
-    if not cancelled:
-        selected = song[num]
-        await delete_msg(embed_msg)
-        if id in queues:
-            queues[id].append(selected)
-        else:
-            queues[id] = [selected]
-        if len(queues[id]) > 0:
-            msg = await ctx.send(f'Added {selected["title"]} to the queue.')
-            await delete_msg(msg)
-        if not voice.is_playing():
-            check_queue(ctx)
-    else:
-        await delete_msg(embed_msg)
-        return
 @bot.command(aliases=['p','P','PLAY'],case_sensitive=False)
 async def play(ctx,query):
     channel = ctx.message.author.voice.channel
@@ -74,55 +16,52 @@ async def play(ctx,query):
     song = await get_song(ctx,query)
     if song != None: # If song is None they used a URL.
         await embed(ctx,song,voice)
-
-@bot.command(aliases=['crt','CRT','CURRENT'],case_sensitive=False)
-async def current(ctx):
-    await ctx.message.delete(delay=5)
-    voice = get(bot.voice_clients, guild=ctx.guild)
-    id = ctx.guild.id
-    if voice and voice.is_playing():
-        msg = await ctx.send(f'Currently playing: {queues[id][0]["title"]}')
-        await delete_msg(msg)
-    else:
-        msg = await ctx.send('Nothing is playing.')
-        await delete_msg(msg)
-
+        
 @bot.command(aliases=['PLAYLIST','PL','pl'])
 async def playlist(ctx, query):
     channel = ctx.message.author.voice.channel
     await ctx.message.delete(delay=5)
     voice = await join(ctx,channel)
     msg = await ctx.send('Getting playlist...')
+    id = ctx.guild.id
     await delete_msg(msg)
     with YoutubeDL({'format': 'bestaudio', 'noplaylist':'False'}) as ydl:
         if query.startswith('https://www.youtube.com/'):
             infos = ydl.extract_info(query, download=False)
-            id = ctx.guild.id
             if id in queues:
                 try:
                     for i in range(len(infos['entries'])):
                         queues[id].append(infos['entries'][i])
                 except:
-                    msg = await ctx.send(f'This is a song, but I still Added it. Added {infos["title"]} playlist to the queue.')
+                    msg = await ctx.send(f'This is not a playlist, but I still Added it. Added {infos["title"]} to the queue.')
                     await delete_msg(msg)
-                    return(infos['entries'])
+                    queues[id].append(infos)
+                    check_queue(ctx)
             else:
                 try:
                     queues[id] = []
                     for i in range(len(infos['entries'])):
                         queues[id].append(infos['entries'][i])
                 except:
-                    msg = await ctx.send(f'This is a song, but I still Added it. Added {infos["title"]} playlist to the queue.')
+                    msg = await ctx.send(f'This is not a playlist, but I still Added it. Added {infos["title"]} to the queue.')
                     await delete_msg(msg)
-                    return(infos['entries'])
+                    queues[id].append(infos)
+                    check_queue(ctx)
             if len(queues[id]) > 0:
                 msg = await ctx.send(f'Added the playlist to the queue.')
                 await delete_msg(msg)
             if not voice.is_playing():
                 check_queue(ctx)
         else:
-            info = ydl.extract_info(f"ytsearch5:{query}", download=False)['entries']
-            return(info)
+            info = ydl.extract_info(f"ytsearch:{query}", download=False)['entries'][0]
+            if id in queues:
+                queues[id].append(info)
+            else:
+                queues[id] = []
+                queues[id].append(info)
+            msg = await ctx.send(f'This is not a playlist, but I still Added it. Added {info["title"]} to the queue.')
+            await delete_msg(msg)
+            check_queue(ctx)
 
 @bot.command(aliases=['st','ST','STOP'],case_sensitive=False)
 async def stop(ctx):
@@ -178,7 +117,21 @@ async def resume(ctx):
     else:
         msg = await ctx.send('Nothing is paused right now.')
         await delete_msg(msg)
+
+@bot.command(aliases=['crt','CRT','CURRENT'],case_sensitive=False)
+async def current(ctx):
+    await ctx.message.delete(delay=5)
+    voice = get(bot.voice_clients, guild=ctx.guild)
+    id = ctx.guild.id
+    if voice and voice.is_playing():
+        msg = await ctx.send(f'Currently playing: {queues[id][0]["title"]}')
+        await delete_msg(msg)
+    else:
+        msg = await ctx.send('Nothing is playing.')
+        await delete_msg(msg)
+
 #Helper functions for the commands:
+
 async def join(ctx,channel):
     voice = get(bot.voice_clients, guild=ctx.guild)
     if voice and voice.is_connected:
@@ -186,6 +139,69 @@ async def join(ctx,channel):
     else:
         voice = await channel.connect()
     return voice
+
+async def get_song(ctx,query):
+    with YoutubeDL({'format': 'bestaudio', 'noplaylist':'False'}) as ydl:
+        if query.startswith('https://www.youtube.com/'):
+            info = ydl.extract_info(query, download=False)
+            voice = get(bot.voice_clients, guild=ctx.guild)
+            id = ctx.guild.id
+            if id in queues:
+                queues[id].append(info)
+            else:
+                queues[id] = [info]
+            if len(queues[id]) > 0:
+                msg = await ctx.send(f'Added {info["title"]} to the queue.')
+                await delete_msg(msg)
+            if not voice.is_playing():
+                check_queue(ctx)
+        else:
+            info = ydl.extract_info(f"ytsearch5:{query}", download=False)['entries']
+            return(info)
+
+async def embed(ctx,song,voice):
+    content = f'1. {song[0]["title"]}\n2. {song[1]["title"]}\n3. {song[2]["title"]}\n4. {song[3]["title"]}\n5. {song[4]["title"]}'
+    embeded = discord.Embed(title='Choose a song:', color=4770532,description=content)
+    embeded.set_footer(text='Type anything else to cancel the selection.')
+    embed_msg = await ctx.send(embed=embeded)
+    message = await bot.wait_for('message')
+    await message.delete(delay=5)
+    await pick_song(ctx,message,song,voice,embed_msg)
+
+async def pick_song(ctx,message,song,voice,embed_msg):
+    id = ctx.guild.id
+    selected = ''
+    num = 0
+    cancelled = False
+    if message.author == ctx.author and message.content.lower() == '1':
+        num = 0
+    elif message.author == ctx.author and message.content.lower() == '2':
+        num = 1
+    elif message.author == ctx.author and message.content.lower() == '3':
+        num = 2
+    elif message.author == ctx.author and message.content.lower() == '4':
+        num = 3
+    elif message.author == ctx.author and message.content.lower() == '5':
+        num = 4
+    elif message.author == ctx.author:
+        msg = await ctx.send('Cancelled.')
+        await delete_msg(msg)
+        cancelled = True
+    if not cancelled:
+        selected = song[num]
+        await delete_msg(embed_msg)
+        if id in queues:
+            queues[id].append(selected)
+        else:
+            queues[id] = [selected]
+        if len(queues[id]) > 0:
+            msg = await ctx.send(f'Added {selected["title"]} to the queue.')
+            await delete_msg(msg)
+        if not voice.is_playing():
+            check_queue(ctx)
+    else:
+        await delete_msg(embed_msg)
+        return
 
 async def play_song(ctx,source,voice,id):
     ctx.voice_client.stop()

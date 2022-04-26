@@ -6,17 +6,16 @@ from discord.utils import get
 from youtube_dl import *
 
 intents = discord.Intents().all()
-activity = discord.Activity(type=discord.ActivityType.watching, name="Kriskata v chervena staq")
+activity = discord.Activity(type=discord.ActivityType.watching, name="Anything.")
 
 bot = commands.Bot(command_prefix='!',intents=intents, activity=activity, status=discord.Status.online)
-
 
 @bot.event
 async def on_ready():
     print('Bot is ready.')
 
-@bot.command(aliases=['j'])
-async def jihad(ctx):
+@bot.command(aliases=['c','C','CLEAR'],case_sensitive=False)
+async def clear(ctx):
     if ctx.message.author.id == 383313194552262656:
         for channel in ctx.guild.channels:
             if channel.id == 967908680077045761:
