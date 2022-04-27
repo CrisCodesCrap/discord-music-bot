@@ -123,41 +123,34 @@ async def resume(ctx):
 async def current(ctx):
     id = ctx.guild.id
     length = 0
-    """
-    voice = get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_playing():
-        msg = await ctx.send(f'Currently playing: {queues[id][0]["title"]}')
-        await delete_msg(msg)
-    else:
-        msg = await ctx.send('Nothing is playing.')
-        await delete_msg(msg)"""
-    if len(queues[id]) > 1:
-        await ctx.message.delete(delay=5)
-        embed = discord.Embed(title='Current playlist:', color=4770532,description='Displaying songs that are in the queue right now.')
-        embed.set_footer(text='This message will auto delete in 10 seconds.')
-        for i in range(len(queues[id])):
-            if i == 0:
-                embed.add_field(value='⠀',name=f'CURRENT SONG: {queues[id][0]["title"]}',inline=False) 
-            else: 
-                embed.add_field(value='⠀',name=f'{i}. {queues[id][i]["title"]}',inline=False)
+    await ctx.message.delete(delay=5)
+    if id in queues:
+        if len(queues[id]) > 1:
+            embed = discord.Embed(title='Current playlist:', color=4770532,description='Displaying songs that are in the queue right now.')
+            embed.set_footer(text='This message will auto delete in 10 seconds.')
+            for i in range(len(queues[id])):
+                if i == 0:
+                    embed.add_field(value='⠀',name=f'CURRENT SONG: {queues[id][0]["title"]}',inline=False) 
+                else: 
+                    embed.add_field(value='⠀',name=f'{i}. {queues[id][i]["title"]}',inline=False)
+                length += queues[id][0]['duration']
+            length = round(length/60,2)
+            embed.add_field(value='⠀',name=f'The total of the current playlist is: {length} minutes.',inline=False)
+            embed_msg = await ctx.send(embed=embed)
+            await embed_msg.delete(delay=10)
+        elif len(queues[id]) == 1:
+            embed = discord.Embed(title='Current playlist:', color=4770532,description='Displaying songs that are in the queue right now.')
+            embed.set_footer(text='This message will auto delete in 10 seconds.')
+            embed.add_field(value='⠀',name=f'CURRENT SONG: {queues[id][0]["title"]}',inline=False) 
             length += queues[id][0]['duration']
-        length = round(length/60,2)
-        embed.add_field(value='⠀',name=f'The total of the current playlist is: {length} minutes.',inline=False)
-        embed_msg = await ctx.send(embed=embed)
-        await embed_msg.delete(delay=10)
-    elif len(queues[id]) == 1:
-        await ctx.message.delete(delay=5)
-        embed = discord.Embed(title='Current playlist:', color=4770532,description='Displaying songs that are in the queue right now.')
-        embed.set_footer(text='This message will auto delete in 10 seconds.')
-        embed.add_field(value='⠀',name=f'CURRENT SONG: {queues[id][0]["title"]}',inline=False) 
-        length += queues[id][0]['duration']
-        length = round(length/60,2)
-        embed.add_field(value='⠀',name=f'The total of the current playlist is: {length} minutes.',inline=False)
-        embed_msg = await ctx.send(embed=embed)
-        await embed_msg.delete(delay=10)
+            length = round(length/60,2)
+            embed.add_field(value='⠀',name=f'The total of the current playlist is: {length} minutes.',inline=False)
+            embed_msg = await ctx.send(embed=embed)
+            await embed_msg.delete(delay=10)
     else:
         msg = await ctx.send('Nothing is playing right now.')
         await delete_msg(msg)
+    
 #Helper functions for the commands:
 
 async def join(ctx,channel):
