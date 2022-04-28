@@ -176,6 +176,8 @@ async def get_song(ctx,query):
                 await delete_msg(msg)
             if not voice.is_playing():
                 check_queue(ctx)
+            else:
+                return
         else:
             info = ydl.extract_info(f"ytsearch5:{query}", download=False)['entries']
             return(info)
